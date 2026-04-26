@@ -15,37 +15,53 @@ export default function Verlauf() {
     }
   }
 
+  // Gruppiere nach Datum
+  const gruppen = ausgaben.reduce<Record<string, Ausgabe[]>>((acc, a) => {
+    const tag = a.datum.slice(0, 10);
+    if (!acc[tag]) acc[tag] = [];
+    acc[tag].push(a);
+    return acc;
+  }, {});
+
   return (
     <div className="page">
-      <h1 className="page-title">Verlauf</h1>
+      <div className="page-header">
+        <h1 className="page-title">Verlauf</h1>
+        <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 500 }}>{ausgaben.length} Einträge</div>
+      </div>
+
       {ausgaben.length === 0 ? (
-        <div className="leer">
+        <div className="leer" style={{ marginTop: 60 }}>
           <span className="leer-emoji">📋</span>
-          <p className="leer-text">Noch keine Ausgaben erfasst</p>
+          <p className="leer-text">Noch keine Ausgaben</p>
+          <p className="leer-hint">Geh zur Übersicht und tippe auf ein Icon</p>
         </div>
       ) : (
-        <div className="card">
-          {ausgaben.map(a => {
-            const k = getKategorie(a.kategorie);
-            return (
-              <div className="buchung-zeile" key={a.id}>
-                <div className="buchung-dot" style={{ background: k.farbe }} />
-                <div className="buchung-info">
-                  <div className="buchung-titel">{a.beschreibung || a.kategorie}</div>
-                  <div className="buchung-datum">
-                    {k.emoji} {a.kategorie} · {new Date(a.datum).toLocaleDateString('de-DE')}
-                  </div>
-                </div>
-                <span className="buchung-betrag">-{formatEuro(a.betrag)}</span>
-                <button
-                  className="buchung-del"
-                  onClick={() => loeschen(a.id, a.beschreibung || a.kategorie)}
-                  title="Löschen"
-                >🗑</button>
+        Object.entries(gruppen)
+          .sort(([a], [b]) => b.localeCompare(a))
+          .map(([tag, items]) => (
+            <div key={tag}>
+              <div className="verlauf-gruppe-title">
+                {new Date(tag).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
               </div>
-            );
-          })}
-        </div>
+              <div className="glass-card" style={{ padding: '4px 16px' }}>
+                {items.map(a => {
+                  const k = getKategorie(a.kategorie);
+                  return (
+                    <div className="buchung-zeile" key={a.id}>
+                      <div className="buchung-icon" style={{ background: k.farbe + '20' }}>{k.emoji}</div>
+                      <div className="buchung-info">
+                        <div className="buchung-titel">{a.beschreibung || a.kategorie}</div>
+                        <div className="buchung-datum">{k.name}</div>
+                      </div>
+                      <span className="buchung-betrag">-{formatEuro(a.betrag)}</span>
+                      <button className="buchung-del" onClick={() => loeschen(a.id, a.beschreibung || a.kategorie)}>🗑</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))
       )}
     </div>
   );

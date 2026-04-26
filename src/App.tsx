@@ -1,19 +1,19 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Verlauf from './pages/Verlauf';
-import NeueAusgabe from './pages/NeueAusgabe';
 import Fixkosten from './pages/Fixkosten';
 import Statistiken from './pages/Statistiken';
+import Einstellungen from './pages/Einstellungen';
 import './index.css';
 
 function Nav() {
   const location = useLocation();
   const navigate = useNavigate();
   const tabs = [
-    { path: '/',            label: 'Übersicht', emoji: '🏠' },
-    { path: '/verlauf',     label: 'Verlauf',   emoji: '📋' },
-    { path: '/fixkosten',   label: 'Fixkosten', emoji: '🔄' },
-    { path: '/statistiken', label: 'Stats',     emoji: '📊' },
+    { path: '/',            emoji: '🏠', label: 'Übersicht' },
+    { path: '/verlauf',     emoji: '📋', label: 'Verlauf'   },
+    { path: '/fixkosten',   emoji: '🔄', label: 'Fixkosten' },
+    { path: '/statistiken', emoji: '📊', label: 'Statistiken' },
   ];
   return (
     <nav className="bottom-nav">
@@ -22,9 +22,9 @@ function Nav() {
           key={t.path}
           className={`nav-btn ${location.pathname === t.path ? 'aktiv' : ''}`}
           onClick={() => navigate(t.path)}
+          title={t.label}
         >
-          <span className="nav-icon">{t.emoji}</span>
-          {t.label}
+          <div className="nav-icon-wrap">{t.emoji}</div>
         </button>
       ))}
     </nav>
@@ -33,15 +33,15 @@ function Nav() {
 
 function Layout() {
   const location = useLocation();
-  const showNav = location.pathname !== '/neu';
+  const showNav = location.pathname !== '/einstellungen';
   return (
     <div className="app">
       <Routes>
-        <Route path="/"            element={<Dashboard />} />
-        <Route path="/verlauf"     element={<Verlauf />} />
-        <Route path="/neu"         element={<NeueAusgabe />} />
-        <Route path="/fixkosten"   element={<Fixkosten />} />
-        <Route path="/statistiken" element={<Statistiken />} />
+        <Route path="/"               element={<Dashboard />} />
+        <Route path="/verlauf"        element={<Verlauf />} />
+        <Route path="/fixkosten"      element={<Fixkosten />} />
+        <Route path="/statistiken"    element={<Statistiken />} />
+        <Route path="/einstellungen"  element={<Einstellungen />} />
       </Routes>
       {showNav && <Nav />}
     </div>
