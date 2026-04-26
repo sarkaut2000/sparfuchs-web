@@ -112,7 +112,30 @@ export default function Dashboard() {
           <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 500 }}>{MONATSNAMEN[d.getMonth()]} {d.getFullYear()}</div>
           <h1 className="page-title">Übersicht</h1>
         </div>
-        <button className="header-btn" onClick={() => navigate('/einstellungen')} title="Einstellungen">⚙️</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="header-btn"
+            title="Daten exportieren (Backup)"
+            onClick={() => {
+              const data = {
+                ausgaben:    localStorage.getItem('sparfuchs_ausgaben'),
+                fixkosten:   localStorage.getItem('sparfuchs_fixkosten'),
+                einkommen:   localStorage.getItem('sparfuchs_einkommen'),
+                kategorien:  localStorage.getItem('sparfuchs_kategorien'),
+                icons:       localStorage.getItem('sparfuchs_icons'),
+                reihenfolge: localStorage.getItem('sparfuchs_kat_order'),
+              };
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `sparfuchs-backup-${new Date().toISOString().slice(0,10)}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >💾</button>
+          <button className="header-btn" onClick={() => navigate('/einstellungen')} title="Einstellungen">⚙️</button>
+        </div>
       </div>
 
       {/* ── Budget-Karte (Einnahmen / Ausgaben / Verbleibend) ── */}
