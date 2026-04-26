@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Verlauf from './pages/Verlauf';
 import Fixkosten from './pages/Fixkosten';
 import Statistiken from './pages/Statistiken';
+import Analyse from './pages/Analyse';
 import Einstellungen from './pages/Einstellungen';
 import { getAlleDesigns, NAV_KEYS } from './lib/icons';
 import './index.css';
@@ -13,6 +14,7 @@ const DEFAULT_NAV = [
   { path: '/verlauf',     key: NAV_KEYS.verlauf,      emoji: '📋', label: 'Verlauf'     },
   { path: '/fixkosten',   key: NAV_KEYS.fixkosten,    emoji: '🔄', label: 'Fixkosten'   },
   { path: '/statistiken', key: NAV_KEYS.statistiken,  emoji: '📊', label: 'Statistiken' },
+  { path: '/analyse',     key: 'nav_analyse',          emoji: '💡', label: 'Analyse'     },
 ];
 
 function Nav() {
@@ -53,7 +55,7 @@ function Nav() {
 
 function Layout() {
   const location = useLocation();
-  const showNav = location.pathname !== '/einstellungen';
+  const showNav = !['/einstellungen'].includes(location.pathname);
   return (
     <div className="app">
       <Routes>
@@ -61,6 +63,7 @@ function Layout() {
         <Route path="/verlauf"        element={<Verlauf />} />
         <Route path="/fixkosten"      element={<Fixkosten />} />
         <Route path="/statistiken"    element={<Statistiken />} />
+        <Route path="/analyse"        element={<Analyse />} />
         <Route path="/einstellungen"  element={<Einstellungen />} />
       </Routes>
       {showNav && <Nav />}
