@@ -1,29 +1,40 @@
-import type { Kategorie } from '../types';
-
-export interface KategorieDesign {
-  customIcon?: string; // base64 PNG
-  hintergrundFarbe?: string; // hex color oder 'transparent'
-  randFarbe?: string; // hex color für transparent-Modus
+// Unterstützt Kategorie-Icons UND System-Icons (Navigation, App-Info)
+export interface IconDesign {
+  customIcon?: string; // base64
+  hintergrundFarbe?: string; // hex oder 'transparent'
+  randFarbe?: string;
 }
 
 const ICONS_KEY = 'sparfuchs_icons';
 
-export function getKategorieDesigns(): Record<string, KategorieDesign> {
+export function getAlleDesigns(): Record<string, IconDesign> {
   const raw = localStorage.getItem(ICONS_KEY);
   return raw ? JSON.parse(raw) : {};
 }
 
-export function saveKategorieDesign(kategorie: Kategorie, design: KategorieDesign) {
-  const alle = getKategorieDesigns();
-  alle[kategorie] = { ...alle[kategorie], ...design };
+// Alias für Kompatibilität
+export function getKategorieDesigns() { return getAlleDesigns(); }
+
+export function saveDesign(schluessel: string, design: Partial<IconDesign>) {
+  const alle = getAlleDesigns();
+  alle[schluessel] = { ...alle[schluessel], ...design };
+  // undefined-Felder entfernen
+  if (design.customIcon === undefined && 'customIcon' in design) delete alle[schluessel].customIcon;
   localStorage.setItem(ICONS_KEY, JSON.stringify(alle));
 }
 
-export function resetKategorieDesign(kategorie: Kategorie) {
-  const alle = getKategorieDesigns();
-  delete alle[kategorie];
+// Alias für Kompatibilität
+export function saveKategorieDesign(schluessel: string, design: Partial<IconDesign>) {
+  saveDesign(schluessel, design);
+}
+
+export function resetDesign(schluessel: string) {
+  const alle = getAlleDesigns();
+  delete alle[schluessel];
   localStorage.setItem(ICONS_KEY, JSON.stringify(alle));
 }
+
+export function resetKategorieDesign(schluessel: string) { resetDesign(schluessel); }
 
 export function pngZuBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -33,3 +44,18 @@ export function pngZuBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+// System-Schlüssel für Navigation und App-Info
+export const NAV_KEYS = {
+  home:       'nav_home',
+  verlauf:    'nav_verlauf',
+  fixkosten:  'nav_fixkosten',
+  statistiken:'nav_statistiken',
+} as const;
+
+export const APP_KEYS = {
+  app:        'app_app',
+  daten:      'app_daten',
+  datenschutz:'app_datenschutz',
+  analyse:    'app_analyse',
+} as const;
