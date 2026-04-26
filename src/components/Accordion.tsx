@@ -28,10 +28,8 @@ export default function Accordion({ titel, children, defaultOffen = true, badge 
   return (
     <div style={{
       background: 'var(--surface)',
-      backdropFilter: 'blur(20px) saturate(1.8)',
-      WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
       borderRadius: 'var(--radius)',
-      border: '1px solid rgba(255,255,255,0.6)',
+      border: '1px solid var(--border)',
       boxShadow: 'var(--shadow)',
       marginBottom: 14,
       overflow: 'hidden',
@@ -48,7 +46,7 @@ export default function Accordion({ titel, children, defaultOffen = true, badge 
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
           {titel}
           {badge && (
-            <span style={{ background: 'var(--accent2)', color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: 10, padding: '1px 7px' }}>
+            <span style={{ background: 'var(--surface3)', color: 'var(--text3)', fontSize: 11, fontWeight: 700, borderRadius: 10, padding: '1px 7px', border: '1px solid var(--border2)' }}>
               {badge}
             </span>
           )}
