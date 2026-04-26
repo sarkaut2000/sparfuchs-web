@@ -56,6 +56,36 @@ export function summeNachKategorie(ausgaben: Ausgabe[]): Record<string, number> 
   }, {});
 }
 
+// ── Einnahmen ──
+const EINKOMMEN_KEY = 'sparfuchs_einkommen';
+
+export interface MonatsEinkommen {
+  monat: string; // 'YYYY-MM'
+  betrag: number;
+}
+
+export function getEinkommen(): MonatsEinkommen[] {
+  const raw = localStorage.getItem(EINKOMMEN_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+export function getEinkommenFuerMonat(monat: string): number {
+  const alle = getEinkommen();
+  const gefunden = alle.find(e => e.monat === monat);
+  if (gefunden) return gefunden.betrag;
+  // Fallback: letzter gespeicherter Wert
+  if (alle.length > 0) return alle[alle.length - 1].betrag;
+  return 0;
+}
+
+export function saveEinkommen(monat: string, betrag: number): void {
+  const alle = getEinkommen();
+  const idx = alle.findIndex(e => e.monat === monat);
+  if (idx >= 0) alle[idx].betrag = betrag;
+  else alle.push({ monat, betrag });
+  localStorage.setItem(EINKOMMEN_KEY, JSON.stringify(alle));
+}
+
 export function formatEuro(betrag: number): string {
   return betrag.toFixed(2).replace('.', ',') + ' €';
 }
