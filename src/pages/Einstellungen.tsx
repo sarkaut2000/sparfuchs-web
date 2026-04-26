@@ -167,6 +167,10 @@ export default function Einstellungen() {
                 {FARBEN.slice(0, 8).map(f => (
                   <button key={f} onClick={() => handleTransparent(f)} style={{ width: 36, height: 36, borderRadius: 10, background: 'transparent', border: `2.5px solid ${f}`, cursor: 'pointer', boxShadow: design?.hintergrundFarbe === 'transparent' && design?.randFarbe === f ? `0 0 0 3px #fff, 0 0 0 5px ${f}` : 'none', transition: 'box-shadow 0.15s' }} />
                 ))}
+                <label style={{ width: 36, height: 36, borderRadius: 10, border: '2px dashed var(--border)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, overflow: 'hidden', position: 'relative' }}>
+                  🎨
+                  <input type="color" style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} onChange={e => handleTransparent(e.target.value)} />
+                </label>
               </div>
             </div>
           </>
