@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  STANDARD_KATEGORIEN, getAlleKategorien, getKategorie,
-  getCustomKategorien, addCustomKategorie, deleteCustomKategorie, zufaelligeFarbe
+  getAlleKategorien, getKategorie,
+  addCustomKategorie, deleteCustomKategorie, zufaelligeFarbe
 } from '../lib/kategorien';
 import { getAlleDesigns, saveDesign, resetDesign, pngZuBase64, NAV_KEYS, APP_KEYS } from '../lib/icons';
+import { saveKatReihenfolge } from '../lib/reihenfolge';
 import type { KategorieDefinition } from '../types';
 
 const FARBEN = ['#E74C3C','#2ECC71','#3498DB','#9B59B6','#F39C12','#1ABC9C','#E67E22','#34495E','#E91E63','#00BCD4','#8BC34A','#FF5722'];
@@ -34,6 +35,27 @@ export default function Einstellungen() {
   const [editKey, setEditKey] = useState<string | null>(null);
   const [_editTyp, setEditTyp] = useState<EditTyp>('kategorie');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag & Drop
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  function bewegeKategorie(von: number, nach: number) {
+    const neu = [...kategorien];
+    const [item] = neu.splice(von, 1);
+    neu.splice(nach, 0, item);
+    saveKatReihenfolge(neu.map(k => k.name));
+    setKategorien(neu);
+    window.dispatchEvent(new Event('sparfuchs_icons_update'));
+  }
+
+  function onDragStart(i: number) { setDragIndex(i); }
+  function onDragOver(e: React.DragEvent, i: number) { e.preventDefault(); setDragOverIndex(i); }
+  function onDrop(i: number) {
+    if (dragIndex !== null && dragIndex !== i) bewegeKategorie(dragIndex, i);
+    setDragIndex(null); setDragOverIndex(null);
+  }
+  function onDragEnd() { setDragIndex(null); setDragOverIndex(null); }
 
   // Neue Kategorie State
   const [neuerName, setNeuerName] = useState('');
@@ -178,32 +200,64 @@ export default function Einstellungen() {
     );
   }
 
-  function renderKatZeile(k: KategorieDefinition) {
+  function renderKatZeile(k: KategorieDefinition, idx: number) {
     const istOffen = editKey === k.name;
     const istCustom = !k.istStandard;
+    const istDragOver = dragOverIndex === idx;
     return (
-      <div key={k.name}>
+      <div
+        key={k.name}
+        draggable
+        onDragStart={() => onDragStart(idx)}
+        onDragOver={e => onDragOver(e, idx)}
+        onDrop={() => onDrop(idx)}
+        onDragEnd={onDragEnd}
+        style={{
+          opacity: dragIndex === idx ? 0.4 : 1,
+          borderTop: istDragOver && dragIndex !== null && dragIndex > idx ? '2px solid var(--accent2)' : '2px solid transparent',
+          borderBottom: istDragOver && dragIndex !== null && dragIndex < idx ? '2px solid var(--accent2)' : '2px solid transparent',
+          transition: 'opacity 0.15s',
+        }}
+      >
         <div
           className="settings-row"
-          style={{ cursor: 'pointer', background: istOffen ? 'rgba(0,122,255,0.07)' : undefined }}
-          onClick={() => { setEditKey(istOffen ? null : k.name); setEditTyp('kategorie'); }}
+          style={{ cursor: 'pointer', background: istOffen ? 'rgba(74,114,160,0.12)' : undefined, gap: 10 }}
         >
-          {renderVorschau(k.name, k.emoji, false, true)}
-          <div className="settings-info">
-            <div className="settings-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {k.name}
-              {istCustom && <span style={{ fontSize: 10, background: 'var(--accent2)', color: '#fff', borderRadius: 6, padding: '1px 6px', fontWeight: 700 }}>Eigene</span>}
-            </div>
-            <div className="settings-desc">{designs[k.name]?.customIcon ? '✓ Eigenes Icon' : 'Standard'}</div>
+          {/* Drag Handle */}
+          <div
+            style={{ fontSize: 18, color: 'var(--text4)', cursor: 'grab', padding: '4px 2px', touchAction: 'none', flexShrink: 0 }}
+            title="Ziehen zum Sortieren"
+          >⠿</div>
+
+          {/* Up / Down Buttons (für Touch) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+            <button onClick={e => { e.stopPropagation(); if (idx > 0) bewegeKategorie(idx, idx - 1); }}
+              disabled={idx === 0}
+              style={{ background: 'none', border: 'none', cursor: idx > 0 ? 'pointer' : 'default', color: idx > 0 ? 'var(--text3)' : 'var(--text4)', fontSize: 12, padding: '0 2px', lineHeight: 1 }}>▲</button>
+            <button onClick={e => { e.stopPropagation(); if (idx < kategorien.length - 1) bewegeKategorie(idx, idx + 1); }}
+              disabled={idx === kategorien.length - 1}
+              style={{ background: 'none', border: 'none', cursor: idx < kategorien.length - 1 ? 'pointer' : 'default', color: idx < kategorien.length - 1 ? 'var(--text3)' : 'var(--text4)', fontSize: 12, padding: '0 2px', lineHeight: 1 }}>▼</button>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+          <div onClick={() => { setEditKey(istOffen ? null : k.name); setEditTyp('kategorie'); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+            {renderVorschau(k.name, k.emoji, false, true)}
+            <div className="settings-info">
+              <div className="settings-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {k.name}
+                {istCustom && <span style={{ fontSize: 10, background: 'var(--accent2)', color: '#fff', borderRadius: 6, padding: '1px 6px', fontWeight: 700 }}>Eigene</span>}
+              </div>
+              <div className="settings-desc">{designs[k.name]?.customIcon ? '✓ Eigenes Icon' : 'Standard'}</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             {istCustom && (
-              <button
-                onClick={e => { e.stopPropagation(); katLoeschen(k.name); }}
-                style={{ background: '#FF3B3015', border: 'none', borderRadius: 8, padding: '4px 8px', color: 'var(--red)', cursor: 'pointer', fontSize: 14 }}
-              >🗑</button>
+              <button onClick={e => { e.stopPropagation(); katLoeschen(k.name); }}
+                style={{ background: 'rgba(176,80,80,0.15)', border: 'none', borderRadius: 8, padding: '4px 8px', color: 'var(--red)', cursor: 'pointer', fontSize: 14 }}>🗑</button>
             )}
-            <span style={{ color: 'var(--text3)', fontSize: 14, transform: istOffen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
+            <span onClick={() => { setEditKey(istOffen ? null : k.name); setEditTyp('kategorie'); }}
+              style={{ color: 'var(--text3)', fontSize: 14, transform: istOffen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', cursor: 'pointer' }}>›</span>
           </div>
         </div>
         {istOffen && <IconEditor schluessel={k.name} defaultEmoji={k.emoji} label={k.name} istKat={true} />}
@@ -245,17 +299,11 @@ export default function Einstellungen() {
       <div className="settings-section">
         <div className="settings-section-title">Kategorien verwalten</div>
 
-        {/* Standard Kategorien */}
-        <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, paddingLeft: 4 }}>Standard ({STANDARD_KATEGORIEN.length})</div>
-        {STANDARD_KATEGORIEN.map(k => renderKatZeile(k))}
-
-        {/* Eigene Kategorien */}
-        {getCustomKategorien().length > 0 && (
-          <>
-            <div style={{ fontSize: 12, color: 'var(--text3)', margin: '16px 0 8px', paddingLeft: 4 }}>Eigene ({getCustomKategorien().length})</div>
-            {getCustomKategorien().map(k => renderKatZeile(k))}
-          </>
-        )}
+        {/* Alle Kategorien — sortierbar per Drag & Drop oder ▲▼ */}
+        <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, paddingLeft: 4 }}>
+          {kategorien.length} Kategorien · Drag &amp; Drop oder ▲▼ zum Sortieren
+        </div>
+        {kategorien.map((k, idx) => renderKatZeile(k, idx))}
 
         {/* Neue Kategorie hinzufügen */}
         <button

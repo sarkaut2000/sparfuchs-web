@@ -27,7 +27,16 @@ export function getCustomKategorien(): KategorieDefinition[] {
 }
 
 export function getAlleKategorien(): KategorieDefinition[] {
-  return [...STANDARD_KATEGORIEN, ...getCustomKategorien()];
+  const alle = [...STANDARD_KATEGORIEN, ...getCustomKategorien()];
+  const reihenfolge = (() => {
+    const raw = localStorage.getItem('sparfuchs_kat_order');
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  })();
+  if (reihenfolge.length === 0) return alle;
+  const map = new Map(alle.map(k => [k.name, k]));
+  const sortiert = reihenfolge.map(n => map.get(n)).filter(Boolean) as KategorieDefinition[];
+  const restliche = alle.filter(k => !reihenfolge.includes(k.name));
+  return [...sortiert, ...restliche];
 }
 
 // Alias für bestehenden Code
