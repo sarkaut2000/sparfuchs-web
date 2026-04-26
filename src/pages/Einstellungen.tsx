@@ -36,10 +36,6 @@ export default function Einstellungen() {
   const [_editTyp, setEditTyp] = useState<EditTyp>('kategorie');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Drag & Drop
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
   function bewegeKategorie(von: number, nach: number) {
     const neu = [...kategorien];
     const [item] = neu.splice(von, 1);
@@ -48,14 +44,6 @@ export default function Einstellungen() {
     setKategorien(neu);
     window.dispatchEvent(new Event('sparfuchs_icons_update'));
   }
-
-  function onDragStart(i: number) { setDragIndex(i); }
-  function onDragOver(e: React.DragEvent, i: number) { e.preventDefault(); setDragOverIndex(i); }
-  function onDrop(i: number) {
-    if (dragIndex !== null && dragIndex !== i) bewegeKategorie(dragIndex, i);
-    setDragIndex(null); setDragOverIndex(null);
-  }
-  function onDragEnd() { setDragIndex(null); setDragOverIndex(null); }
 
   // Neue Kategorie State
   const [neuerName, setNeuerName] = useState('');
@@ -203,44 +191,33 @@ export default function Einstellungen() {
   function renderKatZeile(k: KategorieDefinition, idx: number) {
     const istOffen = editKey === k.name;
     const istCustom = !k.istStandard;
-    const istDragOver = dragOverIndex === idx;
+    const kannHoch = idx > 0;
+    const kannRunter = idx < kategorien.length - 1;
     return (
-      <div
-        key={k.name}
-        draggable
-        onDragStart={() => onDragStart(idx)}
-        onDragOver={e => onDragOver(e, idx)}
-        onDrop={() => onDrop(idx)}
-        onDragEnd={onDragEnd}
-        style={{
-          opacity: dragIndex === idx ? 0.4 : 1,
-          borderTop: istDragOver && dragIndex !== null && dragIndex > idx ? '2px solid var(--accent2)' : '2px solid transparent',
-          borderBottom: istDragOver && dragIndex !== null && dragIndex < idx ? '2px solid var(--accent2)' : '2px solid transparent',
-          transition: 'opacity 0.15s',
-        }}
-      >
-        <div
-          className="settings-row"
-          style={{ cursor: 'pointer', background: istOffen ? 'rgba(74,114,160,0.12)' : undefined, gap: 10 }}
-        >
-          {/* Drag Handle */}
-          <div
-            style={{ fontSize: 18, color: 'var(--text4)', cursor: 'grab', padding: '4px 2px', touchAction: 'none', flexShrink: 0 }}
-            title="Ziehen zum Sortieren"
-          >⠿</div>
+      <div key={k.name}>
+        <div className="settings-row" style={{ background: istOffen ? 'rgba(74,114,160,0.12)' : undefined, gap: 10, padding: '10px 12px' }}>
 
-          {/* Up / Down Buttons (für Touch) */}
+          {/* Hoch / Runter Buttons — groß, gut sichtbar */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
-            <button onClick={e => { e.stopPropagation(); if (idx > 0) bewegeKategorie(idx, idx - 1); }}
-              disabled={idx === 0}
-              style={{ background: 'none', border: 'none', cursor: idx > 0 ? 'pointer' : 'default', color: idx > 0 ? 'var(--text3)' : 'var(--text4)', fontSize: 12, padding: '0 2px', lineHeight: 1 }}>▲</button>
-            <button onClick={e => { e.stopPropagation(); if (idx < kategorien.length - 1) bewegeKategorie(idx, idx + 1); }}
-              disabled={idx === kategorien.length - 1}
-              style={{ background: 'none', border: 'none', cursor: idx < kategorien.length - 1 ? 'pointer' : 'default', color: idx < kategorien.length - 1 ? 'var(--text3)' : 'var(--text4)', fontSize: 12, padding: '0 2px', lineHeight: 1 }}>▼</button>
+            <button
+              onClick={e => { e.stopPropagation(); if (kannHoch) bewegeKategorie(idx, idx - 1); }}
+              style={{
+                width: 30, height: 26, borderRadius: 7, border: 'none', cursor: kannHoch ? 'pointer' : 'default',
+                background: kannHoch ? 'var(--surface3)' : 'transparent',
+                color: kannHoch ? 'var(--text2)' : 'var(--text4)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>↑</button>
+            <button
+              onClick={e => { e.stopPropagation(); if (kannRunter) bewegeKategorie(idx, idx + 1); }}
+              style={{
+                width: 30, height: 26, borderRadius: 7, border: 'none', cursor: kannRunter ? 'pointer' : 'default',
+                background: kannRunter ? 'var(--surface3)' : 'transparent',
+                color: kannRunter ? 'var(--text2)' : 'var(--text4)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>↓</button>
           </div>
 
+          {/* Icon + Name (antippen zum Bearbeiten) */}
           <div onClick={() => { setEditKey(istOffen ? null : k.name); setEditTyp('kategorie'); }}
-            style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, cursor: 'pointer' }}>
             {renderVorschau(k.name, k.emoji, false, true)}
             <div className="settings-info">
               <div className="settings-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -257,7 +234,7 @@ export default function Einstellungen() {
                 style={{ background: 'rgba(176,80,80,0.15)', border: 'none', borderRadius: 8, padding: '4px 8px', color: 'var(--red)', cursor: 'pointer', fontSize: 14 }}>🗑</button>
             )}
             <span onClick={() => { setEditKey(istOffen ? null : k.name); setEditTyp('kategorie'); }}
-              style={{ color: 'var(--text3)', fontSize: 14, transform: istOffen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', cursor: 'pointer' }}>›</span>
+              style={{ color: 'var(--text3)', fontSize: 16, transform: istOffen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', cursor: 'pointer', fontWeight: 700 }}>›</span>
           </div>
         </div>
         {istOffen && <IconEditor schluessel={k.name} defaultEmoji={k.emoji} label={k.name} istKat={true} />}
@@ -383,6 +360,71 @@ export default function Einstellungen() {
       <div className="settings-section">
         <div className="settings-section-title">App Info Icons</div>
         {APP_ITEMS.map(item => renderSystemZeile(item.key, item.emoji, item.label, 'app', item.desc))}
+      </div>
+
+      {/* ── Daten Export / Import (Sync zwischen Geräten) ── */}
+      <div className="settings-section">
+        <div className="settings-section-title">Daten synchronisieren</div>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 16, marginBottom: 10 }}>
+          <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.6, marginBottom: 14 }}>
+            💡 Daten werden lokal gespeichert und nicht automatisch synchronisiert. Exportiere deine Daten auf einem Gerät und importiere sie auf einem anderen.
+          </p>
+
+          {/* Export */}
+          <button
+            onClick={() => {
+              const data = {
+                ausgaben:    localStorage.getItem('sparfuchs_ausgaben'),
+                fixkosten:   localStorage.getItem('sparfuchs_fixkosten'),
+                einkommen:   localStorage.getItem('sparfuchs_einkommen'),
+                kategorien:  localStorage.getItem('sparfuchs_kategorien'),
+                icons:       localStorage.getItem('sparfuchs_icons'),
+                reihenfolge: localStorage.getItem('sparfuchs_kat_order'),
+              };
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `sparfuchs-backup-${new Date().toISOString().slice(0,10)}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            style={{ width: '100%', padding: '13px', borderRadius: 12, border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            📤 Daten exportieren (Backup)
+          </button>
+
+          {/* Import */}
+          <label style={{ width: '100%', padding: '13px', borderRadius: 12, border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            📥 Daten importieren
+            <input
+              type="file"
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => {
+                  try {
+                    const data = JSON.parse(ev.target?.result as string);
+                    if (data.ausgaben)    localStorage.setItem('sparfuchs_ausgaben',    data.ausgaben);
+                    if (data.fixkosten)   localStorage.setItem('sparfuchs_fixkosten',   data.fixkosten);
+                    if (data.einkommen)   localStorage.setItem('sparfuchs_einkommen',   data.einkommen);
+                    if (data.kategorien)  localStorage.setItem('sparfuchs_kategorien',  data.kategorien);
+                    if (data.icons)       localStorage.setItem('sparfuchs_icons',        data.icons);
+                    if (data.reihenfolge) localStorage.setItem('sparfuchs_kat_order',   data.reihenfolge);
+                    alert('✅ Import erfolgreich! Die Seite wird neu geladen.');
+                    window.location.reload();
+                  } catch {
+                    alert('❌ Fehler beim Import. Bitte prüfe die Datei.');
+                  }
+                };
+                reader.readAsText(file);
+              }}
+            />
+          </label>
+        </div>
       </div>
     </div>
   );
