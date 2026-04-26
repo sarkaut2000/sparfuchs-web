@@ -19,6 +19,11 @@ export function deleteAusgabe(id: string): void {
   localStorage.setItem(AUSGABEN_KEY, JSON.stringify(getAusgaben().filter((a) => a.id !== id)));
 }
 
+export function updateAusgabe(id: string, updates: Partial<Ausgabe>): void {
+  const aktualisiert = getAusgaben().map((a) => (a.id === id ? { ...a, ...updates } : a));
+  localStorage.setItem(AUSGABEN_KEY, JSON.stringify(aktualisiert));
+}
+
 export function getFixkosten(): Fixkosten[] {
   const raw = localStorage.getItem(FIXKOSTEN_KEY);
   return raw ? JSON.parse(raw) : [];
