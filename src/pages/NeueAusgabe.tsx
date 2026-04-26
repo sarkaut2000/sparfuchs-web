@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveAusgabe } from '../lib/storage';
-import { KATEGORIEN } from '../lib/kategorien';
+import { getAlleKategorien } from '../lib/kategorien';
 import type { Kategorie } from '../types';
 
 export default function NeueAusgabe() {
@@ -59,7 +59,7 @@ export default function NeueAusgabe() {
 
       <label className="form-label">Kategorie</label>
       <div className="kat-grid">
-        {KATEGORIEN.map(k => (
+        {getAlleKategorien().map(k => (
           <button
             key={k.name}
             className={`kat-btn ${kategorie === k.name ? 'aktiv' : ''}`}

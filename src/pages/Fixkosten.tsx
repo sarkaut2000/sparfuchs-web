@@ -3,7 +3,7 @@ import {
   getFixkosten, saveFixkosten, updateFixkosten,
   deleteFixkosten, formatEuro
 } from '../lib/storage';
-import { KATEGORIEN, getKategorie } from '../lib/kategorien';
+import { getAlleKategorien, getKategorie } from '../lib/kategorien';
 import type { Fixkosten as FixkostenType, Kategorie } from '../types';
 
 export default function Fixkosten() {
@@ -103,7 +103,7 @@ export default function Fixkosten() {
 
             <label className="form-label">Kategorie</label>
             <div className="kat-grid">
-              {KATEGORIEN.map(k => (
+              {getAlleKategorien().map(k => (
                 <button
                   key={k.name}
                   className={`kat-btn ${kategorie === k.name ? 'aktiv' : ''}`}

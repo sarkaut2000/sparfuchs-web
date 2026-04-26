@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAusgaben, deleteAusgabe, updateAusgabe, formatEuro } from '../lib/storage';
-import { getKategorie, KATEGORIEN } from '../lib/kategorien';
+import { getKategorie, getAlleKategorien } from '../lib/kategorien';
 import Accordion from '../components/Accordion';
 import type { Ausgabe, Kategorie } from '../types';
 
@@ -196,7 +196,7 @@ export default function Verlauf() {
 
             <label className="form-label">Kategorie</label>
             <div className="kat-grid" style={{ marginTop: 6 }}>
-              {KATEGORIEN.map(k => (
+              {getAlleKategorien().map(k => (
                 <button
                   key={k.name}
                   className={`kat-btn ${editKategorie === k.name ? 'aktiv' : ''}`}

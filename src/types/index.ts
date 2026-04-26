@@ -1,7 +1,12 @@
-export type Kategorie =
-  | 'Miete' | 'Lebensmittel' | 'Transport' | 'Gesundheit'
-  | 'Freizeit' | 'Kleidung' | 'Versicherung' | 'Kommunikation'
-  | 'Bildung' | 'Restaurant' | 'Sonstiges';
+// Kategorie ist jetzt ein offener string-Typ damit benutzerdefinierte Kategorien möglich sind
+export type Kategorie = string;
+
+export interface KategorieDefinition {
+  name: string;
+  farbe: string;
+  emoji: string;
+  istStandard?: boolean;
+}
 
 export interface Ausgabe {
   id: string;

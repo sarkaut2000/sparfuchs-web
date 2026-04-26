@@ -5,7 +5,7 @@ import {
   summeNachKategorie, saveAusgabe, saveFixkosten,
   formatEuro, aktuellerMonat
 } from '../lib/storage';
-import { KATEGORIEN, getKategorie } from '../lib/kategorien';
+import { getAlleKategorien, getKategorie } from '../lib/kategorien';
 import { getKategorieDesigns } from '../lib/icons';
 import { analysiereSparPotenzial } from '../lib/analyse';
 import Accordion from '../components/Accordion';
@@ -121,7 +121,7 @@ export default function Dashboard() {
       {/* Schnell-Erfassung */}
       <Accordion titel="Schnell erfassen" defaultOffen={true}>
         <div className="schnell-grid">
-          {KATEGORIEN.map(k => renderKatIcon(k.name))}
+          {getAlleKategorien().map(k => renderKatIcon(k.name))}
         </div>
       </Accordion>
 
