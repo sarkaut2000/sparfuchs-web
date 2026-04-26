@@ -32,7 +32,7 @@ export default function Einstellungen() {
   const [designs, setDesigns] = useState(getAlleDesigns());
   const [kategorien, setKategorien] = useState<KategorieDefinition[]>(getAlleKategorien());
   const [editKey, setEditKey] = useState<string | null>(null);
-  const [editTyp, setEditTyp] = useState<EditTyp>('kategorie');
+  const [_editTyp, setEditTyp] = useState<EditTyp>('kategorie');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Neue Kategorie State
@@ -146,35 +146,33 @@ export default function Einstellungen() {
           )}
         </div>
 
-        {/* Hintergrundfarbe */}
-        {(istKat || editTyp === 'nav') && (
-          <>
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 8 }}>Hintergrundfarbe</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {FARBEN.map(f => (
-                  <button key={f} onClick={() => handleFarbe(f)} style={{ width: 36, height: 36, borderRadius: 10, background: f, border: 'none', cursor: 'pointer', boxShadow: design?.hintergrundFarbe === f ? `0 0 0 3px #fff, 0 0 0 5px ${f}` : 'none', transition: 'box-shadow 0.15s' }} />
-                ))}
-                <label style={{ width: 36, height: 36, borderRadius: 10, border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, overflow: 'hidden', position: 'relative' }}>
-                  🎨
-                  <input type="color" style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} onChange={e => handleFarbe(e.target.value)} />
-                </label>
-              </div>
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 8 }}>iOS 26 Transparent mit Rand</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {FARBEN.slice(0, 8).map(f => (
-                  <button key={f} onClick={() => handleTransparent(f)} style={{ width: 36, height: 36, borderRadius: 10, background: 'transparent', border: `2.5px solid ${f}`, cursor: 'pointer', boxShadow: design?.hintergrundFarbe === 'transparent' && design?.randFarbe === f ? `0 0 0 3px #fff, 0 0 0 5px ${f}` : 'none', transition: 'box-shadow 0.15s' }} />
-                ))}
-                <label style={{ width: 36, height: 36, borderRadius: 10, border: '2px dashed var(--border)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, overflow: 'hidden', position: 'relative' }}>
-                  🎨
-                  <input type="color" style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} onChange={e => handleTransparent(e.target.value)} />
-                </label>
-              </div>
-            </div>
-          </>
-        )}
+        {/* Hintergrundfarbe — für alle Typen */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 8 }}>Hintergrundfarbe</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {FARBEN.map(f => (
+              <button key={f} onClick={() => handleFarbe(f)} style={{ width: 36, height: 36, borderRadius: 10, background: f, border: 'none', cursor: 'pointer', boxShadow: design?.hintergrundFarbe === f ? `0 0 0 3px var(--surface2), 0 0 0 5px ${f}` : 'none', transition: 'box-shadow 0.15s' }} />
+            ))}
+            <label style={{ width: 36, height: 36, borderRadius: 10, border: '2px dashed var(--border2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, overflow: 'hidden', position: 'relative', background: 'var(--surface2)' }}>
+              🎨
+              <input type="color" style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} onChange={e => handleFarbe(e.target.value)} />
+            </label>
+          </div>
+        </div>
+
+        {/* iOS 26 Transparent mit Rand — für alle Typen */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 8 }}>iOS 26 Transparent mit Rand</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {FARBEN.map(f => (
+              <button key={f} onClick={() => handleTransparent(f)} style={{ width: 36, height: 36, borderRadius: 10, background: 'transparent', border: `2.5px solid ${f}`, cursor: 'pointer', boxShadow: design?.hintergrundFarbe === 'transparent' && design?.randFarbe === f ? `0 0 0 3px var(--surface2), 0 0 0 5px ${f}` : 'none', transition: 'box-shadow 0.15s' }} />
+            ))}
+            <label style={{ width: 36, height: 36, borderRadius: 10, border: '2px dashed var(--border2)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, overflow: 'hidden', position: 'relative' }}>
+              🎨
+              <input type="color" style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} onChange={e => handleTransparent(e.target.value)} />
+            </label>
+          </div>
+        </div>
         <button onClick={handleReset} style={{ padding: '10px 18px', borderRadius: 12, border: 'none', background: '#FF3B3015', cursor: 'pointer', fontSize: 14, color: 'var(--red)', fontFamily: 'inherit', fontWeight: 600 }}>Auf Standard zurücksetzen</button>
       </div>
     );
