@@ -84,19 +84,41 @@ export default function Dashboard() {
     setEinnahmenInput('');
   }
 
-  function renderKatIcon(kat: Kategorie) {
+  function renderKatPill(kat: Kategorie) {
     const k = getKategorie(kat);
     const design = designs[kat];
     const hatCustomIcon = design?.customIcon;
-    const hintergrund = design?.hintergrundFarbe;
-    const istTransparent = hintergrund === 'transparent';
-    let bg = k.farbe;
-    let border = 'none';
-    if (hintergrund && !istTransparent) bg = hintergrund;
-    if (istTransparent) { bg = 'transparent'; border = `2px solid ${design?.randFarbe ?? k.farbe}`; }
     return (
-      <button key={kat} className="schnell-btn" style={{ background: bg, border, boxSizing: 'border-box' }} onClick={() => oeffneModal(kat)} title={kat}>
-        {hatCustomIcon ? <img src={design.customIcon} alt={kat} style={{ width: '60%', height: '60%', objectFit: 'contain' }} /> : k.emoji}
+      <button
+        key={kat}
+        onClick={() => oeffneModal(kat)}
+        title={kat}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '10px 16px', borderRadius: 10,
+          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.03)',
+          cursor: 'pointer', transition: 'all 0.15s',
+          color: '#e2e2e2', fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
+          whiteSpace: 'nowrap' as const, flexShrink: 0,
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.borderColor = 'rgba(0,242,255,0.4)';
+          e.currentTarget.style.background = 'rgba(0,242,255,0.05)';
+          e.currentTarget.style.color = '#00f2ff';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+          e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+          e.currentTarget.style.color = '#e2e2e2';
+        }}
+      >
+        {hatCustomIcon
+          ? <img src={design.customIcon} alt={kat} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+          : <span style={{ fontSize: 18 }}>{k.emoji}</span>
+        }
+        {kat}
       </button>
     );
   }
@@ -224,8 +246,8 @@ export default function Dashboard() {
 
       {/* Schnell-Erfassung */}
       <Accordion titel="Schnell erfassen" defaultOffen={true}>
-        <div className="schnell-grid">
-          {getAlleKategorien().map(k => renderKatIcon(k.name))}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {getAlleKategorien().map(k => renderKatPill(k.name))}
         </div>
       </Accordion>
 
