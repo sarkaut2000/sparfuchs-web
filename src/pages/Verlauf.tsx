@@ -1,82 +1,50 @@
 import { useState, useEffect } from 'react';
 import { getAusgaben, deleteAusgabe, updateAusgabe, formatEuro } from '../lib/storage';
 import { getKategorie, getAlleKategorien } from '../lib/kategorien';
-import Accordion from '../components/Accordion';
 import type { Ausgabe, Kategorie } from '../types';
 
 type Zeitraum = 'alle' | 'woche' | 'monat' | 'jahr';
 
-function startOfWeek(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - d.getDay() + 1);
-  return d;
+function filterNachZeit(ausgaben: Ausgabe[], zeitraum: Zeitraum): Ausgabe[] {
+  if (zeitraum === 'alle') return ausgaben;
+  const jetzt = new Date(); const von = new Date();
+  if (zeitraum === 'woche')  { von.setDate(von.getDate() - 7); }
+  if (zeitraum === 'monat')  { von.setDate(1); von.setHours(0,0,0,0); }
+  if (zeitraum === 'jahr')   { von.setMonth(0,1); von.setHours(0,0,0,0); }
+  return ausgaben.filter(a => new Date(a.datum) >= von && new Date(a.datum) <= jetzt);
 }
 
-function filterAusgaben(ausgaben: Ausgabe[], zeitraum: Zeitraum): Ausgabe[] {
-  if (zeitraum === 'alle') return ausgaben;
-  const jetzt = new Date();
-  const von = new Date();
-  if (zeitraum === 'woche') von.setTime(startOfWeek().getTime());
-  if (zeitraum === 'monat') { von.setDate(1); von.setHours(0, 0, 0, 0); }
-  if (zeitraum === 'jahr') { von.setMonth(0, 1); von.setHours(0, 0, 0, 0); }
-  return ausgaben.filter(a => {
-    const d = new Date(a.datum);
-    return d >= von && d <= jetzt;
-  });
-}
+const ZEITRAEUME: { key: Zeitraum; label: string }[] = [
+  { key: 'alle', label: 'ALL' },
+  { key: 'monat', label: 'MONTH' },
+  { key: 'woche', label: 'WEEK' },
+  { key: 'jahr', label: 'YEAR' },
+];
 
 export default function Verlauf() {
   const [ausgaben, setAusgaben] = useState<Ausgabe[]>([]);
+  const [suche, setSuche] = useState('');
   const [zeitraum, setZeitraum] = useState<Zeitraum>('monat');
+  const [filterKat, setFilterKat] = useState<string>('ALL');
   const [editModal, setEditModal] = useState<Ausgabe | null>(null);
   const [editBetrag, setEditBetrag] = useState('');
   const [editBeschreibung, setEditBeschreibung] = useState('');
   const [editKategorie, setEditKategorie] = useState<Kategorie>('Sonstiges');
   const [editDatum, setEditDatum] = useState('');
-  const [fehler, setFehler] = useState('');
 
   useEffect(() => { setAusgaben(getAusgaben()); }, []);
 
-  function oeffneEdit(a: Ausgabe) {
-    setEditModal(a);
-    setEditBetrag(a.betrag.toString());
-    setEditBeschreibung(a.beschreibung || '');
-    setEditKategorie(a.kategorie);
-    setEditDatum(a.datum.slice(0, 10));
-    setFehler('');
-  }
+  const alleKategorien = getAlleKategorien();
+  const katFilter = ['ALL', ...alleKategorien.map(k => k.name)];
 
-  function speichernEdit() {
-    if (!editModal) return;
-    const betragNum = parseFloat(editBetrag.replace(',', '.'));
-    if (isNaN(betragNum) || betragNum <= 0) {
-      setFehler('Bitte einen gültigen Betrag eingeben');
-      return;
-    }
-    updateAusgabe(editModal.id, {
-      betrag: betragNum,
-      beschreibung: editBeschreibung,
-      kategorie: editKategorie,
-      datum: editDatum,
-    });
-    const aktualisiert = getAusgaben();
-    setAusgaben(aktualisiert);
-    setEditModal(null);
-  }
+  let gefiltert = filterNachZeit(ausgaben, zeitraum);
+  if (filterKat !== 'ALL') gefiltert = gefiltert.filter(a => a.kategorie === filterKat);
+  if (suche.trim()) gefiltert = gefiltert.filter(a =>
+    (a.beschreibung + a.kategorie).toLowerCase().includes(suche.toLowerCase())
+  );
+  const gesamt = gefiltert.reduce((s, a) => s + a.betrag, 0);
 
-  function loeschen(id: string, name: string) {
-    if (confirm(`"${name}" wirklich löschen?`)) {
-      deleteAusgabe(id);
-      setAusgaben(getAusgaben());
-      setEditModal(null);
-    }
-  }
-
-  const gefiltertAusgaben = filterAusgaben(ausgaben, zeitraum);
-  const gesamt = gefiltertAusgaben.reduce((s, a) => s + a.betrag, 0);
-
-  const gruppen = gefiltertAusgaben.reduce<Record<string, Ausgabe[]>>((acc, a) => {
+  const gruppen = gefiltert.reduce<Record<string, Ausgabe[]>>((acc, a) => {
     const tag = a.datum.slice(0, 10);
     if (!acc[tag]) acc[tag] = [];
     acc[tag].push(a);
@@ -84,74 +52,111 @@ export default function Verlauf() {
   }, {});
   const gruppenSortiert = Object.entries(gruppen).sort(([a], [b]) => b.localeCompare(a));
 
-  const ZEITRAEUME: { key: Zeitraum; label: string }[] = [
-    { key: 'woche',  label: 'Woche'  },
-    { key: 'monat',  label: 'Monat'  },
-    { key: 'jahr',   label: 'Jahr'   },
-    { key: 'alle',   label: 'Alles'  },
-  ];
+  function oeffneEdit(a: Ausgabe) {
+    setEditModal(a);
+    setEditBetrag(a.betrag.toString());
+    setEditBeschreibung(a.beschreibung || '');
+    setEditKategorie(a.kategorie);
+    setEditDatum(a.datum.slice(0, 10));
+  }
+
+  function speichernEdit() {
+    if (!editModal) return;
+    const n = parseFloat(editBetrag.replace(',', '.'));
+    if (isNaN(n) || n <= 0) return;
+    updateAusgabe(editModal.id, { betrag: n, beschreibung: editBeschreibung, kategorie: editKategorie, datum: editDatum });
+    setAusgaben(getAusgaben());
+    setEditModal(null);
+  }
+
+  function loeschen(id: string, name: string) {
+    if (confirm(`"${name}" wirklich löschen?`)) { deleteAusgabe(id); setAusgaben(getAusgaben()); setEditModal(null); }
+  }
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">Verlauf</h1>
-        <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600 }}>{formatEuro(gesamt)}</div>
+    <div className="page" style={{ paddingTop: 24 }}>
+      {/* Hero Header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 48, fontWeight: 900, letterSpacing: '-0.02em', color: '#e2e2e2', lineHeight: 1, marginBottom: 8 }}>ACTIVITY</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>Detailed breakdown of your financial interactions and real-time ledger updates.</p>
       </div>
 
-      {/* Zeitraum-Filter */}
-      <div style={{ display: 'flex', background: '#E5E5EA', borderRadius: 12, padding: 3, marginBottom: 16 }}>
+      {/* Search */}
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <span className="material-symbols-outlined" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', fontSize: 18 }}>search</span>
+        <input
+          style={{ width: '100%', padding: '12px 14px 12px 44px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#e2e2e2', fontSize: 12, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: '0.08em', outline: 'none' }}
+          placeholder="SEARCH TRANSACTIONS..."
+          value={suche}
+          onChange={e => setSuche(e.target.value)}
+        />
+      </div>
+
+      {/* Zeitraum Pills */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto' }}>
         {ZEITRAEUME.map(z => (
           <button key={z.key} onClick={() => setZeitraum(z.key)} style={{
-            flex: 1, padding: '8px 4px', borderRadius: 10, border: 'none', cursor: 'pointer',
-            background: zeitraum === z.key ? '#fff' : 'transparent',
-            color: zeitraum === z.key ? 'var(--text)' : 'var(--text3)',
-            fontWeight: zeitraum === z.key ? 700 : 500, fontSize: 13,
-            boxShadow: zeitraum === z.key ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-            transition: 'all 0.2s', fontFamily: 'inherit',
-          }}>
-            {z.label}
-          </button>
+            padding: '8px 18px', borderRadius: 8, border: `1px solid ${zeitraum === z.key ? 'rgba(0,242,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+            background: zeitraum === z.key ? 'rgba(0,242,255,0.08)' : 'transparent',
+            color: zeitraum === z.key ? '#00f2ff' : 'rgba(255,255,255,0.4)',
+            fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
+            cursor: 'pointer', whiteSpace: 'nowrap' as const,
+            boxShadow: zeitraum === z.key ? '0 0 12px rgba(0,242,255,0.15)' : 'none',
+          }}>{z.label}</button>
         ))}
       </div>
 
-      {/* Anzahl Info */}
-      <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 12, paddingLeft: 2 }}>
-        {gefiltertAusgaben.length} Buchungen · {formatEuro(gesamt)}
+      {/* Kategorie Filter */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
+        {katFilter.slice(0, 8).map(k => (
+          <button key={k} onClick={() => setFilterKat(k)} style={{
+            padding: '6px 14px', borderRadius: 6, border: `1px solid ${filterKat === k ? 'rgba(0,242,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
+            background: filterKat === k ? 'rgba(0,242,255,0.08)' : 'transparent',
+            color: filterKat === k ? '#00f2ff' : 'rgba(255,255,255,0.3)',
+            fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+            cursor: 'pointer', whiteSpace: 'nowrap' as const,
+          }}>{k}</button>
+        ))}
       </div>
 
-      {gefiltertAusgaben.length === 0 ? (
-        <div className="leer" style={{ marginTop: 40 }}>
-          <span className="leer-emoji">📋</span>
-          <p className="leer-text">Keine Buchungen in diesem Zeitraum</p>
-        </div>
+      {/* Zusammenfassung */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20, padding: '12px 16px', background: 'rgba(0,242,255,0.04)', border: '1px solid rgba(0,242,255,0.1)', borderRadius: 8 }}>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.3)' }}>{gefiltert.length} Transactions</span>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600, color: '#e2e2e2', letterSpacing: '-0.01em' }}>{formatEuro(gesamt)}</span>
+      </div>
+
+      {/* Listen */}
+      {gefiltert.length === 0 ? (
+        <div className="leer"><span className="leer-emoji">📋</span><p className="leer-text">Keine Buchungen gefunden</p></div>
       ) : (
         gruppenSortiert.map(([tag, items]) => (
-          <Accordion
-            key={tag}
-            titel={new Date(tag + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            badge={`${formatEuro(items.reduce((s, a) => s + a.betrag, 0))}`}
-            defaultOffen={true}
-          >
-            {items.map(a => {
-              const k = getKategorie(a.kategorie);
-              return (
-                <div
-                  className="buchung-zeile"
-                  key={a.id}
-                  onClick={() => oeffneEdit(a)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className="buchung-icon" style={{ background: k.farbe + '20' }}>{k.emoji}</div>
-                  <div className="buchung-info">
-                    <div className="buchung-titel">{a.beschreibung || a.kategorie}</div>
-                    <div className="buchung-datum">{k.name}{a.ist_fixkosten ? ' · 🔒 Fix' : ''}</div>
+          <div key={tag}>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)', margin: '16px 0 8px', padding: '0 2px' }}>
+              {new Date(tag + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
+              <span style={{ marginLeft: 12, color: 'rgba(0,242,255,0.5)' }}>{formatEuro(items.reduce((s,a)=>s+a.betrag,0))}</span>
+            </div>
+            <div style={{ background: 'rgba(10,10,10,0.6)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, overflow: 'hidden' }}>
+              {items.map((a, i) => {
+                const k = getKategorie(a.kategorie);
+                return (
+                  <div key={a.id} onClick={() => oeffneEdit(a)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: i < items.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none', cursor: 'pointer', transition: 'background 0.15s' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(0,242,255,0.08)', border: '1px solid rgba(0,242,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{k.emoji}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: '#e2e2e2' }}>{a.beschreibung || a.kategorie}</div>
+                      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+                        {a.kategorie} {a.ist_fixkosten ? '· FIXED MONTHLY' : '· VARIABLE'}
+                      </div>
+                    </div>
+                    <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 700, color: '#e2e2e2' }}>-{formatEuro(a.betrag)}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 14 }}>›</span>
                   </div>
-                  <span className="buchung-betrag">-{formatEuro(a.betrag)}</span>
-                  <span style={{ fontSize: 16, color: 'var(--text3)', marginLeft: 4 }}>✏️</span>
-                </div>
-              );
-            })}
-          </Accordion>
+                );
+              })}
+            </div>
+          </div>
         ))
       )}
 
@@ -161,68 +166,23 @@ export default function Verlauf() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-handle" />
             <div className="modal-header">
-              <span className="modal-title">✏️ Bearbeiten</span>
+              <span className="modal-title">Edit Transaction</span>
               <button className="modal-close" onClick={() => setEditModal(null)}>✕</button>
             </div>
-
-            <label className="form-label">Betrag (€)</label>
-            <input
-              className="form-input"
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              value={editBetrag}
-              onChange={e => { setEditBetrag(e.target.value); setFehler(''); }}
-              autoFocus
-            />
-            {fehler && <p className="fehler">{fehler}</p>}
-
-            <label className="form-label">Beschreibung</label>
-            <input
-              className="form-input"
-              type="text"
-              value={editBeschreibung}
-              onChange={e => setEditBeschreibung(e.target.value)}
-              placeholder="z.B. Wocheneinkauf"
-            />
-
-            <label className="form-label">Datum</label>
-            <input
-              className="form-input"
-              type="date"
-              value={editDatum}
-              onChange={e => setEditDatum(e.target.value)}
-            />
-
-            <label className="form-label">Kategorie</label>
-            <div className="kat-grid" style={{ marginTop: 6 }}>
+            <label className="form-label">Amount (€)</label>
+            <input className="form-input" type="number" inputMode="decimal" step="0.01" value={editBetrag} onChange={e => setEditBetrag(e.target.value)} autoFocus />
+            <label className="form-label">Description</label>
+            <input className="form-input" type="text" value={editBeschreibung} onChange={e => setEditBeschreibung(e.target.value)} />
+            <label className="form-label">Date</label>
+            <input className="form-input" type="date" value={editDatum} onChange={e => setEditDatum(e.target.value)} />
+            <label className="form-label">Category</label>
+            <div className="kat-grid">
               {getAlleKategorien().map(k => (
-                <button
-                  key={k.name}
-                  className={`kat-btn ${editKategorie === k.name ? 'aktiv' : ''}`}
-                  style={editKategorie === k.name ? { background: k.farbe } : {}}
-                  onClick={() => setEditKategorie(k.name)}
-                  type="button"
-                >
-                  {k.emoji} {k.name}
-                </button>
+                <button key={k.name} className={`kat-btn ${editKategorie === k.name ? 'aktiv' : ''}`} style={editKategorie === k.name ? { background: '#00f2ff' } : {}} onClick={() => setEditKategorie(k.name)} type="button">{k.emoji} {k.name}</button>
               ))}
             </div>
-
-            <button className="btn-primary" onClick={speichernEdit} style={{ marginTop: 22 }}>
-              ✓ Änderungen speichern
-            </button>
-            <button
-              onClick={() => loeschen(editModal.id, editModal.beschreibung || editModal.kategorie)}
-              style={{
-                width: '100%', padding: 14, marginTop: 10,
-                background: '#FF3B3012', border: 'none', borderRadius: 12,
-                color: 'var(--red)', fontSize: 15, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >
-              🗑 Löschen
-            </button>
+            <button className="btn-primary" onClick={speichernEdit}>Save Changes</button>
+            <button onClick={() => loeschen(editModal.id, editModal.beschreibung || editModal.kategorie)} style={{ width: '100%', padding: 14, marginTop: 10, background: 'rgba(255,100,100,0.1)', border: '1px solid rgba(255,100,100,0.2)', borderRadius: 8, color: '#ff6b6b', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.08em' }}>DELETE TRANSACTION</button>
           </div>
         </div>
       )}
