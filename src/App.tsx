@@ -10,11 +10,11 @@ import { getAlleDesigns, NAV_KEYS } from './lib/icons';
 import './index.css';
 
 const DEFAULT_NAV = [
-  { path: '/',            key: NAV_KEYS.home,        emoji: '🏠', label: 'Übersicht'   },
-  { path: '/verlauf',     key: NAV_KEYS.verlauf,      emoji: '📋', label: 'Verlauf'     },
-  { path: '/fixkosten',   key: NAV_KEYS.fixkosten,    emoji: '🔄', label: 'Fixkosten'   },
-  { path: '/statistiken', key: NAV_KEYS.statistiken,  emoji: '📊', label: 'Statistiken' },
-  { path: '/analyse',     key: 'nav_analyse',          emoji: '💡', label: 'Analyse'     },
+  { path: '/',            key: NAV_KEYS.home,        icon: 'grid_view',    label: 'Dashboard'  },
+  { path: '/verlauf',     key: NAV_KEYS.verlauf,      icon: 'receipt_long', label: 'Activity'   },
+  { path: '/fixkosten',   key: NAV_KEYS.fixkosten,    icon: 'repeat',       label: 'Budgets'    },
+  { path: '/statistiken', key: NAV_KEYS.statistiken,  icon: 'monitoring',   label: 'Stats'      },
+  { path: '/analyse',     key: 'nav_analyse',          icon: 'auto_awesome', label: 'Insights'   },
 ];
 
 function Nav() {
@@ -42,10 +42,11 @@ function Nav() {
           >
             <div className="nav-icon-wrap">
               {design?.customIcon
-                ? <img src={design.customIcon} alt={t.label} style={{ width: 26, height: 26, objectFit: 'contain' }} />
-                : t.emoji
+                ? <img src={design.customIcon} alt={t.label} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                : <span className={`material-symbols-outlined ${istAktiv ? 'filled' : ''}`}>{t.icon}</span>
               }
             </div>
+            {t.label}
           </button>
         );
       })}

@@ -27,48 +27,47 @@ export default function Accordion({ titel, children, defaultOffen = true, badge 
 
   return (
     <div style={{
-      background: 'var(--surface)',
-      borderRadius: 'var(--radius)',
-      border: '1px solid var(--border)',
-      boxShadow: 'var(--shadow)',
-      marginBottom: 14,
+      background: 'rgba(10,10,10,0.6)',
+      backdropFilter: 'blur(40px)',
+      WebkitBackdropFilter: 'blur(40px)',
+      borderRadius: 16,
+      border: '1px solid rgba(255,255,255,0.08)',
+      marginBottom: 10,
       overflow: 'hidden',
     }}>
       <button
         onClick={() => setOffen(!offen)}
         style={{
           width: '100%', display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', padding: '16px 18px',
-          background: 'none', border: 'none', cursor: 'pointer',
-          textAlign: 'left',
+          justifyContent: 'space-between', padding: '16px 20px',
+          background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          {titel}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+            textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.4)',
+          }}>{titel}</span>
           {badge && (
-            <span style={{ background: 'var(--surface3)', color: 'var(--text3)', fontSize: 11, fontWeight: 700, borderRadius: 10, padding: '1px 7px', border: '1px solid var(--border2)' }}>
-              {badge}
-            </span>
+            <span style={{
+              background: 'rgba(0,242,255,0.1)', color: '#00f2ff',
+              border: '1px solid rgba(0,242,255,0.25)',
+              fontSize: 9, fontWeight: 700, borderRadius: 10,
+              padding: '2px 7px', fontFamily: "'Space Grotesk', sans-serif",
+              letterSpacing: '0.05em',
+            }}>{badge}</span>
           )}
         </span>
         <span style={{
-          fontSize: 14, color: 'var(--text3)',
+          fontSize: 10, color: 'rgba(255,255,255,0.3)',
           transform: offen ? 'rotate(180deg)' : 'rotate(0deg)',
           transition: 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
-          display: 'inline-block',
+          display: 'inline-block', fontFamily: 'monospace',
         }}>▼</span>
       </button>
-      <div
-        ref={contentRef}
-        style={{
-          height: hoehe,
-          overflow: 'hidden',
-          transition: 'height 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
-        }}
-      >
-        <div style={{ padding: '0 18px 16px' }}>
-          {children}
-        </div>
+      <div ref={contentRef} style={{ height: hoehe, overflow: 'hidden', transition: 'height 0.35s cubic-bezier(0.32, 0.72, 0, 1)' }}>
+        <div style={{ padding: '0 20px 18px' }}>{children}</div>
       </div>
     </div>
   );
