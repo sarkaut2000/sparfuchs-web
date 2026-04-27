@@ -96,7 +96,7 @@ export default function Fixkosten() {
       </div>
 
       {/* Hero Banner */}
-      <div className="hero-card" style={{ background: 'linear-gradient(135deg,#3498DB,#5856D6)' }}>
+      <div className="hero-card" style={{ background: 'linear-gradient(135deg,#3498DB,#5856D6)', margin: '0 4px 14px' }}>
         <div className="hero-label">Monatliche Fixkosten gesamt</div>
         <div className="hero-betrag">{formatEuro(gesamtMonatlich)}</div>
         <div className="hero-sub">{aktiveFixkosten.length} aktive Positionen</div>
