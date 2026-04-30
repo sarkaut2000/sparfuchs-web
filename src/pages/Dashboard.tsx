@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getAusgaben, getFixkosten, getAusgabenFuerMonat,
@@ -13,6 +13,25 @@ import Accordion from '../components/Accordion';
 import type { Ausgabe, Fixkosten, Kategorie } from '../types';
 
 const MONATSNAMEN = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+const KATEGORIE_KEYWORDS: Record<string, string[]> = {
+  'Mobilität':       ['tanken', 'tankstelle', 'benzin', 'diesel', 'sprit', 'auto', 'bahn', 'bus', 'taxi', 'uber', 'zug', 'parken', 'ticket', 'öpnv'],
+  'Lebensmittel':    ['supermarkt', 'lebensmittel', 'einkaufen', 'einkauf', 'lidl', 'aldi', 'rewe', 'edeka', 'kaufland', 'penny', 'netto'],
+  'Restaurant':      ['restaurant', 'essen gehen', 'kebab', 'pizza', 'burger', 'döner', 'café', 'cafe', 'kaffee', 'mittagessen', 'abendessen'],
+  'Miete':           ['miete', 'wohnung', 'mietwohnung'],
+  'Stadtwerke':      ['strom', 'gas', 'wasser', 'stadtwerke', 'energie', 'nebenkosten', 'heizung'],
+  'Tango':           ['tango', 'tanz', 'tanzkurs'],
+  'Kleidung':        ['kleidung', 'klamotten', 'shirt', 'hose', 'schuhe', 'jacke', 'mode', 'zara'],
+  'Versicherung':    ['versicherung'],
+  'Internet':        ['internet', 'wlan', 'dsl'],
+  'Mobiltelefon':    ['handy', 'mobiltelefon', 'smartphone', 'iphone'],
+  'Bildung':         ['kurs', 'schule', 'bildung', 'buch', 'bücher', 'seminar', 'weiterbildung'],
+  'Abos/Verträge':   ['abo', 'abonnement', 'netflix', 'spotify', 'amazon', 'streaming', 'vertrag'],
+  'Schuldentilgung': ['schulden', 'kredit', 'rate', 'darlehen', 'rückzahlung'],
+  'Gesundheit':      ['arzt', 'apotheke', 'medikament', 'medikamente', 'zahnarzt', 'physiotherapie'],
+  'Freizeit':        ['freizeit', 'kino', 'sport', 'gaming', 'spiel', 'hobby', 'fitnessstudio', 'gym', 'fitness'],
+  'Sonstiges':       ['sonstiges', 'diverses', 'anderes'],
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -33,6 +52,56 @@ export default function Dashboard() {
   // Einnahmen Modal
   const [einnahmenModal, setEinnahmenModal] = useState(false);
   const [einnahmenInput, setEinnahmenInput] = useState('');
+
+  // Spracheingabe
+  const [hoeren, setHoeren] = useState(false);
+  const [sprachText, setSprachText] = useState('');
+  const [sprachFehler, setSprachFehler] = useState('');
+  const erkennerRef = useRef<any>(null);
+
+  function parseSprachEingabe(text: string): { betrag: string | null; kategorie: Kategorie | null } {
+    const lower = text.toLowerCase();
+    const betragMatch = lower.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:euro|€|eur)?/);
+    const betrag = betragMatch ? betragMatch[1].replace(',', '.') : null;
+    let kategorie: Kategorie | null = null;
+    for (const [kat, keywords] of Object.entries(KATEGORIE_KEYWORDS)) {
+      if (keywords.some(kw => lower.includes(kw))) { kategorie = kat as Kategorie; break; }
+    }
+    if (!kategorie) {
+      for (const k of getAlleKategorien()) {
+        if (lower.includes(k.name.toLowerCase())) { kategorie = k.name as Kategorie; break; }
+      }
+    }
+    return { betrag, kategorie };
+  }
+
+  function startSpracherkennung() {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) { setSprachFehler('Spracherkennung nicht unterstützt (Chrome/Safari empfohlen)'); return; }
+    if (hoeren) { erkennerRef.current?.stop(); setHoeren(false); return; }
+    const erkenner = new SpeechRec();
+    erkennerRef.current = erkenner;
+    erkenner.lang = 'de-DE';
+    erkenner.continuous = false;
+    erkenner.interimResults = false;
+    setHoeren(true); setSprachText(''); setSprachFehler('');
+    erkenner.onresult = (e: any) => {
+      const text = e.results[0][0].transcript;
+      setSprachText(text);
+      setHoeren(false);
+      const { betrag: erkBetrag, kategorie: erkKat } = parseSprachEingabe(text);
+      if (erkKat) {
+        oeffneModal(erkKat);
+        if (erkBetrag) setBetrag(erkBetrag);
+        setBeschreibung(text);
+      } else {
+        setSprachFehler(`Erkannt: „${text}" — Kategorie nicht gefunden, bitte manuell wählen`);
+      }
+    };
+    erkenner.onerror = (e: any) => { setHoeren(false); if (e.error !== 'aborted') setSprachFehler('Mikrofon-Fehler: ' + e.error); };
+    erkenner.onend = () => setHoeren(false);
+    erkenner.start();
+  }
 
   const monat = aktuellerMonat();
 
@@ -243,6 +312,31 @@ export default function Dashboard() {
 
       {/* Schnell-Erfassung */}
       <Accordion titel="Schnell erfassen" defaultOffen={true}>
+        <button
+          onClick={startSpracherkennung}
+          style={{
+            width: '100%', marginBottom: 12, padding: '13px 16px',
+            borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s',
+            fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, fontWeight: 600,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            border: hoeren ? '1px solid rgba(255,60,60,0.5)' : '1px solid rgba(255,255,255,0.12)',
+            background: hoeren ? 'rgba(255,60,60,0.08)' : 'rgba(255,255,255,0.04)',
+            color: hoeren ? '#ff6b6b' : 'rgba(255,255,255,0.55)',
+          }}
+        >
+          <span style={{ fontSize: 18 }}>{hoeren ? '🔴' : '🎙️'}</span>
+          {hoeren ? 'Höre zu …' : 'Spracheingabe'}
+        </button>
+        {sprachText && !hoeren && (
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 10, textAlign: 'center' }}>
+            „{sprachText}"
+          </div>
+        )}
+        {sprachFehler && (
+          <div style={{ fontSize: 12, color: '#ff6b6b', marginBottom: 10, textAlign: 'center' }}>
+            {sprachFehler}
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
           {getAlleKategorien().map(k => renderKatPill(k.name))}
         </div>
