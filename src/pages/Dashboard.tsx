@@ -59,7 +59,51 @@ export default function Dashboard() {
   const [sprachFehler, setSprachFehler] = useState('');
   const erkennerRef = useRef<any>(null);
 
-  function parseSprachEingabe(text: string): { betrag: string | null; kategorie: Kategorie | null } {
+  function parseDatum(lower: string): string {
+    const heute = new Date();
+    if (lower.includes('vorgestern')) { const d = new Date(heute); d.setDate(d.getDate() - 2); return d.toISOString().slice(0, 10); }
+    if (lower.includes('gestern'))    { const d = new Date(heute); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); }
+    if (lower.includes('heute'))      { return heute.toISOString().slice(0, 10); }
+
+    // Wochentage → letztes Auftreten
+    const wochentage = ['sonntag','montag','dienstag','mittwoch','donnerstag','freitag','samstag'];
+    for (let i = 0; i < wochentage.length; i++) {
+      if (lower.includes(wochentage[i])) {
+        const d = new Date(heute);
+        let diff = d.getDay() - i;
+        if (diff <= 0) diff += 7;
+        d.setDate(d.getDate() - diff);
+        return d.toISOString().slice(0, 10);
+      }
+    }
+
+    // "15. April" oder "15ten April"
+    const monate = ['januar','februar','märz','april','mai','juni','juli','august','september','oktober','november','dezember'];
+    const monatsMatch = lower.match(/(\d{1,2})\.?\s*([a-zä]{3,})/);
+    if (monatsMatch) {
+      const tag = parseInt(monatsMatch[1]);
+      const monatIdx = monate.findIndex(m => monatsMatch[2].startsWith(m.slice(0, 3)));
+      if (monatIdx >= 0 && tag >= 1 && tag <= 31) {
+        const d = new Date(heute.getFullYear(), monatIdx, tag);
+        if (d > heute) d.setFullYear(heute.getFullYear() - 1);
+        return d.toISOString().slice(0, 10);
+      }
+    }
+
+    // "15.04." oder "15.04.2024"
+    const datumMatch = lower.match(/(\d{1,2})\.(\d{1,2})\.?(\d{4})?/);
+    if (datumMatch) {
+      const tag = parseInt(datumMatch[1]);
+      const mon = parseInt(datumMatch[2]) - 1;
+      const jahr = datumMatch[3] ? parseInt(datumMatch[3]) : heute.getFullYear();
+      const d = new Date(jahr, mon, tag);
+      if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+    }
+
+    return heute.toISOString().slice(0, 10);
+  }
+
+  function parseSprachEingabe(text: string): { betrag: string | null; kategorie: Kategorie | null; datum: string } {
     const lower = text.toLowerCase();
     const betragMatch = lower.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:euro|€|eur)?/);
     const betrag = betragMatch ? betragMatch[1].replace(',', '.') : null;
@@ -72,7 +116,8 @@ export default function Dashboard() {
         if (lower.includes(k.name.toLowerCase())) { kategorie = k.name as Kategorie; break; }
       }
     }
-    return { betrag, kategorie };
+    const datum = parseDatum(lower);
+    return { betrag, kategorie, datum };
   }
 
   function startSpracherkennung() {
@@ -89,11 +134,12 @@ export default function Dashboard() {
       const text = e.results[0][0].transcript;
       setSprachText(text);
       setHoeren(false);
-      const { betrag: erkBetrag, kategorie: erkKat } = parseSprachEingabe(text);
+      const { betrag: erkBetrag, kategorie: erkKat, datum: erkDatum } = parseSprachEingabe(text);
       if (erkKat) {
         oeffneModal(erkKat);
         if (erkBetrag) setBetrag(erkBetrag);
         setBeschreibung(text);
+        setDatum(erkDatum);
       } else {
         setSprachFehler(`Erkannt: „${text}" — Kategorie nicht gefunden, bitte manuell wählen`);
       }
