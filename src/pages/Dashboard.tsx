@@ -58,6 +58,7 @@ export default function Dashboard() {
   const [sprachText, setSprachText] = useState('');
   const [sprachLive, setSprachLive] = useState('');
   const [sprachFehler, setSprachFehler] = useState('');
+  const [sprachKatWahl, setSprachKatWahl] = useState<{ betrag: string | null; datum: string; text: string } | null>(null);
   const erkennerRef = useRef<any>(null);
 
   function parseDatum(lower: string): string {
@@ -164,7 +165,7 @@ export default function Dashboard() {
           setBeschreibung(final);
           setDatum(erkDatum);
         } else {
-          setSprachFehler(`Erkannt: „${final}" — Kategorie nicht gefunden, bitte Kategorie manuell tippen`);
+          setSprachKatWahl({ betrag: erkBetrag, datum: erkDatum, text: final });
         }
       }
     };
@@ -501,6 +502,54 @@ export default function Dashboard() {
           })
         )}
       </Accordion>
+
+      {/* ── Sprache: Kategorie wählen Modal ── */}
+      {sprachKatWahl && (
+        <div className="modal-overlay" onClick={() => setSprachKatWahl(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-header">
+              <span className="modal-title">🎙️ Kategorie wählen</span>
+              <button className="modal-close" onClick={() => setSprachKatWahl(null)}>✕</button>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 14, padding: '0 4px' }}>
+              Erkannt: <span style={{ color: 'var(--text)', fontWeight: 600 }}>„{sprachKatWahl.text}"</span>
+              {sprachKatWahl.betrag && <span style={{ color: 'var(--accent)', fontWeight: 700 }}> · {sprachKatWahl.betrag} €</span>}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, maxHeight: '55vh', overflowY: 'auto' }}>
+              {getAlleKategorien().map(k => {
+                const design = designs[k.name];
+                const hatCustomIcon = design?.customIcon;
+                return (
+                  <button
+                    key={k.name}
+                    onClick={() => {
+                      oeffneModal(k.name as Kategorie);
+                      if (sprachKatWahl.betrag) setBetrag(sprachKatWahl.betrag);
+                      setBeschreibung(sprachKatWahl.text);
+                      setDatum(sprachKatWahl.datum);
+                      setSprachKatWahl(null);
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+                      border: '1px solid var(--border)', background: 'var(--surface2)',
+                      color: 'var(--text)', fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                      textAlign: 'left',
+                    }}
+                  >
+                    {hatCustomIcon
+                      ? <img src={design.customIcon} alt={k.name} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                      : <span style={{ fontSize: 20 }}>{k.emoji}</span>
+                    }
+                    {k.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Einnahmen Modal ── */}
       {einnahmenModal && (
