@@ -123,17 +123,31 @@ export default function Dashboard() {
   function startSpracherkennung() {
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRec) { setSprachFehler('Spracherkennung nicht unterstützt (Chrome/Safari empfohlen)'); return; }
-    if (hoeren) { erkennerRef.current?.stop(); setHoeren(false); return; }
+
+    if (hoeren) {
+      erkennerRef.current?.abort();
+      erkennerRef.current = null;
+      setHoeren(false);
+      return;
+    }
+
+    // Alte Instanz sauber beenden
+    if (erkennerRef.current) {
+      erkennerRef.current.abort();
+      erkennerRef.current = null;
+    }
+
     const erkenner = new SpeechRec();
     erkennerRef.current = erkenner;
     erkenner.lang = 'de-DE';
     erkenner.continuous = false;
     erkenner.interimResults = false;
+
     setHoeren(true); setSprachText(''); setSprachFehler('');
+
     erkenner.onresult = (e: any) => {
       const text = e.results[0][0].transcript;
       setSprachText(text);
-      setHoeren(false);
       const { betrag: erkBetrag, kategorie: erkKat, datum: erkDatum } = parseSprachEingabe(text);
       if (erkKat) {
         oeffneModal(erkKat);
@@ -144,9 +158,25 @@ export default function Dashboard() {
         setSprachFehler(`Erkannt: „${text}" — Kategorie nicht gefunden, bitte manuell wählen`);
       }
     };
-    erkenner.onerror = (e: any) => { setHoeren(false); if (e.error !== 'aborted') setSprachFehler('Mikrofon-Fehler: ' + e.error); };
-    erkenner.onend = () => setHoeren(false);
-    erkenner.start();
+
+    erkenner.onerror = (e: any) => {
+      erkennerRef.current = null;
+      setHoeren(false);
+      if (e.error !== 'aborted' && e.error !== 'no-speech') setSprachFehler('Mikrofon-Fehler: ' + e.error);
+    };
+
+    erkenner.onend = () => {
+      erkennerRef.current = null;
+      setHoeren(false);
+    };
+
+    try {
+      erkenner.start();
+    } catch {
+      setSprachFehler('Konnte nicht starten – bitte nochmal versuchen');
+      setHoeren(false);
+      erkennerRef.current = null;
+    }
   }
 
   const monat = aktuellerMonat();
