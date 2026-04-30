@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   getAlleKategorien, getKategorie,
   addCustomKategorie, deleteCustomKategorie, zufaelligeFarbe
@@ -29,7 +28,6 @@ type EditTyp = 'kategorie' | 'nav' | 'app';
 const EMOJI_VORSCHLAEGE = ['🏠','🛒','⚡','🚗','💊','🎮','💃','👕','🛡️','🌐','📱','📚','🍽️','📄','💳','📦','🎵','🐶','🌿','✈️','🏋️','🎨','📷','🎸','🍕','☕','🎁','🌍','💰','🏦'];
 
 export default function Einstellungen() {
-  const navigate = useNavigate();
   const [designs, setDesigns] = useState(getAlleDesigns());
   const [kategorien, setKategorien] = useState<KategorieDefinition[]>(getAlleKategorien());
   const [editKey, setEditKey] = useState<string | null>(null);
@@ -267,9 +265,10 @@ export default function Einstellungen() {
   return (
     <div className="page">
       <div className="page-header">
-        <button className="header-btn" onClick={() => navigate(-1)}>←</button>
-        <h1 className="page-title">Einstellungen</h1>
-        <div style={{ width: 36 }} />
+        <div>
+          <h1 className="page-title">Einstellungen</h1>
+        </div>
+        <div />
       </div>
 
       {/* ── Kategorien verwalten ── */}

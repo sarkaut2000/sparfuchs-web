@@ -10,11 +10,12 @@ import { getAlleDesigns, NAV_KEYS } from './lib/icons';
 import './index.css';
 
 const DEFAULT_NAV = [
-  { path: '/',            key: NAV_KEYS.home,        icon: 'grid_view',    label: 'Dashboard'  },
-  { path: '/verlauf',     key: NAV_KEYS.verlauf,      icon: 'receipt_long', label: 'Activity'   },
-  { path: '/fixkosten',   key: NAV_KEYS.fixkosten,    icon: 'repeat',       label: 'Budgets'    },
-  { path: '/statistiken', key: NAV_KEYS.statistiken,  icon: 'monitoring',   label: 'Stats'      },
-  { path: '/analyse',     key: 'nav_analyse',          icon: 'auto_awesome', label: 'Insights'   },
+  { path: '/',              key: NAV_KEYS.home,        icon: 'grid_view',    label: 'Dashboard'  },
+  { path: '/verlauf',       key: NAV_KEYS.verlauf,     icon: 'receipt_long', label: 'Activity'   },
+  { path: '/fixkosten',     key: NAV_KEYS.fixkosten,   icon: 'repeat',       label: 'Budgets'    },
+  { path: '/statistiken',   key: NAV_KEYS.statistiken, icon: 'monitoring',   label: 'Stats'      },
+  { path: '/analyse',       key: 'nav_analyse',         icon: 'auto_awesome', label: 'Insights'   },
+  { path: '/einstellungen', key: 'nav_settings',        icon: 'settings',     label: 'Settings'   },
 ];
 
 function Nav() {
@@ -55,8 +56,6 @@ function Nav() {
 }
 
 function Layout() {
-  const location = useLocation();
-  const showNav = !['/einstellungen'].includes(location.pathname);
   return (
     <div className="app">
       <Routes>
@@ -67,7 +66,7 @@ function Layout() {
         <Route path="/analyse"        element={<Analyse />} />
         <Route path="/einstellungen"  element={<Einstellungen />} />
       </Routes>
-      {showNav && <Nav />}
+      <Nav />
     </div>
   );
 }
