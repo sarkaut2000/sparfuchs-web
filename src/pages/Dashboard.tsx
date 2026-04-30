@@ -56,6 +56,7 @@ export default function Dashboard() {
   // Spracheingabe
   const [hoeren, setHoeren] = useState(false);
   const [sprachText, setSprachText] = useState('');
+  const [sprachLive, setSprachLive] = useState('');
   const [sprachFehler, setSprachFehler] = useState('');
   const erkennerRef = useRef<any>(null);
 
@@ -141,33 +142,46 @@ export default function Dashboard() {
     erkennerRef.current = erkenner;
     erkenner.lang = 'de-DE';
     erkenner.continuous = false;
-    erkenner.interimResults = false;
+    erkenner.interimResults = true;
 
-    setHoeren(true); setSprachText(''); setSprachFehler('');
+    setHoeren(true); setSprachText(''); setSprachLive(''); setSprachFehler('');
 
     erkenner.onresult = (e: any) => {
-      const text = e.results[0][0].transcript;
-      setSprachText(text);
-      const { betrag: erkBetrag, kategorie: erkKat, datum: erkDatum } = parseSprachEingabe(text);
-      if (erkKat) {
-        oeffneModal(erkKat);
-        if (erkBetrag) setBetrag(erkBetrag);
-        setBeschreibung(text);
-        setDatum(erkDatum);
-      } else {
-        setSprachFehler(`Erkannt: „${text}" — Kategorie nicht gefunden, bitte manuell wählen`);
+      let interim = '';
+      let final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if (interim) setSprachLive(interim);
+      if (final) {
+        setSprachLive('');
+        setSprachText(final);
+        const { betrag: erkBetrag, kategorie: erkKat, datum: erkDatum } = parseSprachEingabe(final);
+        if (erkKat) {
+          oeffneModal(erkKat);
+          if (erkBetrag) setBetrag(erkBetrag);
+          setBeschreibung(final);
+          setDatum(erkDatum);
+        } else {
+          setSprachFehler(`Erkannt: „${final}" — Kategorie nicht gefunden, bitte Kategorie manuell tippen`);
+        }
       }
     };
 
     erkenner.onerror = (e: any) => {
       erkennerRef.current = null;
       setHoeren(false);
-      if (e.error !== 'aborted' && e.error !== 'no-speech') setSprachFehler('Mikrofon-Fehler: ' + e.error);
+      setSprachLive('');
+      if (e.error === 'no-speech') setSprachFehler('Nichts gehört – bitte nochmal versuchen und deutlich sprechen');
+      else if (e.error === 'not-allowed') setSprachFehler('Mikrofon-Zugriff verweigert – bitte in den Browser-Einstellungen erlauben');
+      else if (e.error !== 'aborted') setSprachFehler('Fehler: ' + e.error);
     };
 
     erkenner.onend = () => {
       erkennerRef.current = null;
       setHoeren(false);
+      setSprachLive('');
     };
 
     try {
@@ -175,6 +189,7 @@ export default function Dashboard() {
     } catch {
       setSprachFehler('Konnte nicht starten – bitte nochmal versuchen');
       setHoeren(false);
+      setSprachLive('');
       erkennerRef.current = null;
     }
   }
@@ -403,7 +418,12 @@ export default function Dashboard() {
           <span style={{ fontSize: 18 }}>{hoeren ? '🔴' : '🎙️'}</span>
           {hoeren ? 'Höre zu …' : 'Spracheingabe'}
         </button>
-        {sprachText && !hoeren && (
+        {sprachLive && (
+          <div style={{ fontSize: 13, color: 'rgba(0,242,255,0.7)', marginBottom: 10, textAlign: 'center', fontStyle: 'italic' }}>
+            {sprachLive} …
+          </div>
+        )}
+        {sprachText && !hoeren && !sprachFehler && (
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 10, textAlign: 'center' }}>
             „{sprachText}"
           </div>
