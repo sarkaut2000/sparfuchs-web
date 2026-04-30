@@ -94,14 +94,12 @@ export default function Dashboard() {
         onClick={() => oeffneModal(kat)}
         title={kat}
         style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '13px 16px', borderRadius: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 0, borderRadius: 14,
           border: '1px solid rgba(255,255,255,0.1)',
           background: 'rgba(255,255,255,0.03)',
           cursor: 'pointer', transition: 'all 0.15s',
-          color: '#e2e2e2', fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: 13, fontWeight: 600, letterSpacing: '0.04em',
-          width: '100%', textAlign: 'left' as const,
+          aspectRatio: '1 / 1', width: '100%',
         }}
         onMouseEnter={e => {
           e.currentTarget.style.borderColor = 'rgba(0,242,255,0.4)';
@@ -115,10 +113,9 @@ export default function Dashboard() {
         }}
       >
         {hatCustomIcon
-          ? <img src={design.customIcon} alt={kat} style={{ width: 20, height: 20, objectFit: 'contain' }} />
-          : <span style={{ fontSize: 18 }}>{k.emoji}</span>
+          ? <img src={design.customIcon} alt={kat} style={{ width: 36, height: 36, objectFit: 'contain' }} />
+          : <span style={{ fontSize: 28 }}>{k.emoji}</span>
         }
-        {kat}
       </button>
     );
   }
@@ -246,7 +243,7 @@ export default function Dashboard() {
 
       {/* Schnell-Erfassung */}
       <Accordion titel="Schnell erfassen" defaultOffen={true}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
           {getAlleKategorien().map(k => renderKatPill(k.name))}
         </div>
       </Accordion>
